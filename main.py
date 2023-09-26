@@ -16,9 +16,15 @@ def get_urls(csv_file):
     return df
 
 
-# def process_products(df):
-#   for product in df.to_dict("records"):
-# product["url"] is the URL
+def process_products(df):
+    updated_products = []
+    for product in df.to_dict('records'):
+        html = get_response(product['url'])
+        product['price'] = get_price(html)
+        product['alert'] = product['price'] < product["alert_price"]
+        updated_products.append(product)
+    return pd.DataFrame(updated_products)
+
 
 def get_response(url):
     response = requests.get(url)
@@ -31,6 +37,10 @@ def get_price(html):
     price = price_parser.Price.fromstring(el.text)
     return price.amount_float
 
+def main():
+    df = get_urls(PRODUCT_URL_CSV)
+    df_updated = process_products(df)
+    if SAVE_TO_CSV:
+        df_updated.to_csv(PRICES_CSV,index=False,mode='a')
 
-stuff = get_response("https://books.toscrape.com/catalogue/a-light-in-the-attic_1000/index.html")
-print(get_price(stuff))
+main()
